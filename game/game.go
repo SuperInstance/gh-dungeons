@@ -53,6 +53,7 @@ func New(opts ...GameOption) (*Game, error) {
 
 	var codeFiles []CodeFile
 	var seed int64
+	var mergeConflict *MergeConflictLocation
 
 	// PLATO mode: fetch rooms from PLATO server
 	if options.platoURL != "" {
@@ -79,7 +80,6 @@ func New(opts ...GameOption) (*Game, error) {
 		}
 
 		// Find merge conflict location if in merge mode
-		var mergeConflict *MergeConflictLocation
 		if options.mergeMode {
 			mergeConflict = findMergeConflict(cwd)
 		}
@@ -88,6 +88,7 @@ func New(opts ...GameOption) (*Game, error) {
 		if len(codeFiles) == 0 {
 			seed = 42 // Default seed if no code files found
 		}
+		
 	}
 
 	screen, err := tcell.NewScreen()
@@ -105,7 +106,6 @@ func New(opts ...GameOption) (*Game, error) {
 	width, height := screen.Size()
 	state := NewGameState(codeFiles, seed, width, height)
 	state.MergeConflict = mergeConflict
-
 	return &Game{
 		screen:    screen,
 		state:     state,

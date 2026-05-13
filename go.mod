@@ -1,6 +1,8 @@
 module github.com/SuperInstance/gh-dungeons
 
-go 1.25.5
+go 1.24.0
+
+toolchain go1.24.2
 
 require (
 	github.com/gdamore/tcell/v2 v2.13.7
