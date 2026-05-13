@@ -1,34 +1,70 @@
 # gh-dungeons 🎮
 
-A procedurally generated roguelike dungeon crawler that turns your repos into a unique playable game!
+A procedurally generated roguelike dungeon crawler that turns your repos into a unique playable game — and can also turn **PLATO knowledge rooms** into playable dungeon levels!
 
 Built using [GitHub Copilot CLI](https://github.com/features/copilot/cli) for the [GitHub Copilot CLI Challenge](https://dev.to/leereilly/a-procedurally-generated-github-cli-roguelike-where-every-dungeon-is-built-from-your-code-1ef).
+
+Forked from [leereilly/gh-dungeons](https://github.com/leereilly/gh-dungeons).
 
 ![Demo GIF](assets/demo.gif)
 
 ## Installation
 
 ```bash
-gh extension install leereilly/gh-dungeons
+gh extension install SuperInstance/gh-dungeons
 ```
 
 Or build from source:
 ```bash
-git clone https://github.com/leereilly/gh-dungeons
+git clone https://github.com/SuperInstance/gh-dungeons
 cd gh-dungeons
 go build -o gh-dungeons
 ```
 
 ## Usage
 
+### Code Dungeon Mode (default)
+
 Navigate to any Git repository and run:
 ```bash
 gh dungeons
 ```
+Your code files become the dungeon — longer files create more complex rooms.
 
-WASD, arrow keys, and Vim keys (because of course)
+### PLATO Bridge Mode
 
-## Controls
+Connect to a PLATO knowledge server and turn rooms into dungeon levels:
+```bash
+gh dungeons --plato-url http://localhost:8847
+```
+
+With a specific room:
+```bash
+gh dungeons --plato-url http://localhost:8847 --plato-room oracle1
+```
+
+### How PLATO Rooms Become Dungeon Levels
+
+Each PLATO room maps to a dungeon level:
+
+| PLATO Concept | Dungeon Equivalent |
+|--------------|-------------------|
+| Room | Dungeon Level |
+| Tile | Monster / Item |
+| Tile Question | Item Description |
+| Tile Answer | Monster Name / Loot |
+| Room Name | Level Seed |
+
+The room's tile count determines enemy difficulty and count. Questions and answers from tiles become the text content visible on floor tiles, creating a unique procedural background for each level.
+
+### Merge Conflict Mode
+
+```bash
+gh dungeons --merge
+```
+Shows merge conflict markers in the dungeon. Step on them at your peril.
+
+### Controls
 
 | Key | Action |
 |-----|--------|
@@ -50,6 +86,7 @@ WASD, arrow keys, and Vim keys (because of course)
 ### Features
 
 - **BSP-tree dungeon generation** - procedurally created rooms and corridors
+- **PLATO integration** - knowledge rooms become dungeon levels
 - **Fog of war** - limited vision radius, explored areas stay visible
 - **Enemy AI** - enemies chase you when in line of sight
 - **Auto-attack** - automatically attack adjacent enemies
@@ -94,6 +131,30 @@ For technical documentation aimed at modders, contributors, and those who want t
 - **[Seeding](./docs/seeding.md)** — Deterministic RNG and reproducibility
 - **[Modding Guide](./docs/modding.md)** — Step-by-step guides for adding content
 
+## Architecture
+
+```
+gh-dungeons/
+├── main.go          # CLI entry, flag parsing
+├── game/
+│   ├── game.go      # Game loop, rendering, options
+│   ├── state.go     # Game state, level generation
+│   ├── dungeon.go   # BSP dungeon generation
+│   ├── entity.go    # Player, enemies, items
+│   ├── monster.go   # Monster registry & YAML
+│   ├── scanner.go   # Code file scanner (default mode)
+│   └── plato_source.go  # PLATO bridge (PLATO mode)
+```
+
+### PLATO Bridge (`plato_source.go`)
+
+The PLATO source module connects to a PLATO room server:
+
+1. Fetches room list from `GET /rooms` → `["room1", "room2", ...]`
+2. Fetches each room from `GET /room/{name}` → `{name, tiles: [...]}`
+3. Converts rooms to `CodeFile` format (room name = path, Q&A = lines)
+4. Computes seed from room metadata for deterministic generation
+
 ## License
 
-MIT
+MIT — original work [leereilly/gh-dungeons](https://github.com/leereilly/gh-dungeons), PLATO bridge additions by SuperInstance.

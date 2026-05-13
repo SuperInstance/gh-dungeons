@@ -18,13 +18,29 @@ type Game struct {
 type GameOption func(*gameOptions)
 
 type gameOptions struct {
-	mergeMode bool
+	mergeMode  bool
+	platoURL   string
+	platoRoom  string
 }
 
 // WithMergeMode enables merge conflict display mode
 func WithMergeMode(enabled bool) GameOption {
 	return func(o *gameOptions) {
 		o.mergeMode = enabled
+	}
+}
+
+// WithPLATOURL sets the PLATO server URL (enables PLATO mode)
+func WithPLATOURL(url string) GameOption {
+	return func(o *gameOptions) {
+		o.platoURL = url
+	}
+}
+
+// WithPLATORoom sets a specific PLATO room to dungeonify
+func WithPLATORoom(room string) GameOption {
+	return func(o *gameOptions) {
+		o.platoRoom = room
 	}
 }
 
@@ -35,27 +51,43 @@ func New(opts ...GameOption) (*Game, error) {
 		opt(options)
 	}
 
-	// Find code files in current directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		cwd = "."
-	}
+	var codeFiles []CodeFile
+	var seed int64
 
-	codeFiles, err := findCodeFiles(cwd, 60, 5)
-	if err != nil {
-		return nil, fmt.Errorf("scanning code files: %w", err)
-	}
+	// PLATO mode: fetch rooms from PLATO server
+	if options.platoURL != "" {
+		source, err := FetchPLATOSource(options.platoURL, options.platoRoom)
+		if err != nil {
+			return nil, fmt.Errorf("connecting to PLATO server: %w", err)
+		}
+		codeFiles = source.PLATOToCodeFiles()
+		seed = source.ComputeSeed()
+		if len(codeFiles) == 0 {
+			seed = 42
+		}
+	} else {
+		// Default: scan code files in current directory
+		cwd, err := os.Getwd()
+		if err != nil {
+			cwd = "."
+		}
 
-	// Find merge conflict location if in merge mode
-	var mergeConflict *MergeConflictLocation
-	if options.mergeMode {
-		mergeConflict = findMergeConflict(cwd)
-	}
+		var errScan error
+		codeFiles, errScan = findCodeFiles(cwd, 60, 5)
+		if errScan != nil {
+			return nil, fmt.Errorf("scanning code files: %w", errScan)
+		}
 
-	// Compute seed from code files
-	seed := computeSeed(codeFiles)
-	if len(codeFiles) == 0 {
-		seed = 42 // Default seed if no code files found
+		// Find merge conflict location if in merge mode
+		var mergeConflict *MergeConflictLocation
+		if options.mergeMode {
+			mergeConflict = findMergeConflict(cwd)
+		}
+
+		seed = computeSeed(codeFiles)
+		if len(codeFiles) == 0 {
+			seed = 42 // Default seed if no code files found
+		}
 	}
 
 	screen, err := tcell.NewScreen()

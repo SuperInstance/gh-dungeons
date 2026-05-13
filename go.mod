@@ -1,4 +1,4 @@
-module github.com/leereilly/gh-dungeons
+module github.com/SuperInstance/gh-dungeons
 
 go 1.25.5
 
