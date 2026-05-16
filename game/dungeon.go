@@ -147,6 +147,7 @@ type Dungeon struct {
 	Tiles    [][]Tile
 	Rooms    []*Room
 	CodeFile *CodeFile
+	scaler   *ConservationScaler
 }
 
 type Tile int
@@ -157,12 +158,13 @@ const (
 	TileDoor
 )
 
-func GenerateDungeon(width, height int, rng *rand.Rand, codeFile *CodeFile) *Dungeon {
+func GenerateDungeon(width, height int, rng *rand.Rand, codeFile *CodeFile, floorLevel int) *Dungeon {
 	d := &Dungeon{
 		Width:    width,
 		Height:   height,
 		Tiles:    make([][]Tile, height),
 		CodeFile: codeFile,
+		scaler:   NewConservationScaler(floorLevel),
 	}
 
 	for y := 0; y < height; y++ {
@@ -244,6 +246,11 @@ func (d *Dungeon) carveVerticalCorridor(y1, y2, x int) {
 			d.Tiles[y][x] = TileFloor
 		}
 	}
+}
+
+// GetScaler returns the dungeon's conservation scaler for scaling monster attributes.
+func (d *Dungeon) GetScaler() *ConservationScaler {
+	return d.scaler
 }
 
 func (d *Dungeon) IsWalkable(x, y int) bool {

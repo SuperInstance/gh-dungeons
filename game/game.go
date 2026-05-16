@@ -2,11 +2,84 @@ package game
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
 )
+
+// ConservationScaler scales dungeon difficulty using the fleet conservation law.
+// As agents (players) grow in number and connectivity, the game's
+// coordination difficulty follows the same γ+H curve.
+type ConservationScaler struct {
+	floorLevel int
+}
+
+// NewConservationScaler creates a scaler for the given floor level.
+func NewConservationScaler(floor int) *ConservationScaler {
+	return &ConservationScaler{floorLevel: floor}
+}
+
+// gamma returns the connectivity coefficient for floor scaling.
+// As floor increases, the connectivity (difficulty coupling between rooms) grows.
+func (cs *ConservationScaler) gamma() float64 {
+	// γ(p) = 0.791 * p^1.042 where p = edge density
+	// For dungeons: p grows with floor complexity
+	p := float64(cs.floorLevel) / 10.0 // normalized floor density
+	if p > 1.0 {
+		p = 1.0
+	}
+	return 0.791 * math.Pow(p, 1.042)
+}
+
+// H returns the entropy term for floor scaling.
+// More rooms (larger floors) = higher entropy (more unpredictability).
+func (cs *ConservationScaler) H() float64 {
+	// H(k) = 1 - 0.716*exp(-0.057*k) where k = latent rank
+	// For dungeons: k = floorLevel (more rooms = higher rank)
+	k := float64(cs.floorLevel)
+	return 1.0 - 0.716*math.Exp(-0.057*k)
+}
+
+// V returns the effective vertex count.
+// For dungeons: V = number of active entities (players + monsters)
+func (cs *ConservationScaler) V(players, monsters int) int {
+	return players + monsters
+}
+
+// Scale applies the conservation law to return a difficulty multiplier.
+// Returns value in range [0.8, 2.5] based on γ+H.
+func (cs *ConservationScaler) Scale(players, monsters int) float64 {
+	gamma := cs.gamma()
+	H := cs.H()
+	V := cs.V(players, monsters)
+
+	// γ+H = 1.283 - 0.159*log(V)
+	predicted := 1.283 - 0.159*math.Log(float64(V))
+	actual := gamma + H
+
+	// Deviation from predicted gives the difficulty multiplier
+	// deviation > 0 means under-conserved (hard), < 0 means over-conserved (easy)
+	dev := actual - predicted
+
+	// Map deviation to [0.8, 2.5] multiplier
+	multiplier := 1.0 + dev
+	if multiplier < 0.8 {
+		multiplier = 0.8
+	}
+	if multiplier > 2.5 {
+		multiplier = 2.5
+	}
+	return multiplier
+}
+
+// MonsterMultiplier returns HP and damage multipliers for monsters on this floor.
+func (cs *ConservationScaler) MonsterMultiplier() float64 {
+	m := cs.Scale(1, 1)
+	// Monsters get half the player-facing multiplier
+	return 0.8 + (m-0.8)*0.5
+}
 
 type Game struct {
 	screen    tcell.Screen
