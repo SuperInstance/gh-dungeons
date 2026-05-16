@@ -95,7 +95,7 @@ func (gs *GameState) generateLevel() {
 		codeFile = &gs.CodeFiles[(gs.Level-1)%len(gs.CodeFiles)]
 	}
 
-	gs.Dungeon = GenerateDungeon(width, height, gs.RNG, codeFile)
+	gs.Dungeon = GenerateDungeon(width, height, gs.RNG, codeFile, gs.Level)
 
 	// Initialize visibility arrays
 	gs.Visible = make([][]bool, height)
@@ -131,13 +131,29 @@ func (gs *GameState) generateLevel() {
 	for i := 0; i < numEnemies; i++ {
 		x, y := gs.randomFloorTile()
 		def := registry.GetRandomMonster(gs.RNG)
-		gs.Enemies = append(gs.Enemies, NewMonsterFromDef(def, x, y))
+		enemy := NewMonsterFromDef(def, x, y)
+		// Scale HP using conservation law
+		mult := gs.Dungeon.GetScaler().MonsterMultiplier()
+		enemy.HP = int(float64(enemy.HP) * mult)
+		if enemy.HP < 1 {
+			enemy.HP = 1
+		}
+		enemy.MaxHP = enemy.HP
+		gs.Enemies = append(gs.Enemies, enemy)
 	}
 
 	// Spawn one of each unique monster per level
 	for _, def := range registry.GetUniqueMonsters() {
 		x, y := gs.randomFloorTile()
-		gs.Enemies = append(gs.Enemies, NewMonsterFromDef(def, x, y))
+		enemy := NewMonsterFromDef(def, x, y)
+		// Scale HP using conservation law
+		mult := gs.Dungeon.GetScaler().MonsterMultiplier()
+		enemy.HP = int(float64(enemy.HP) * mult)
+		if enemy.HP < 1 {
+			enemy.HP = 1
+		}
+		enemy.MaxHP = enemy.HP
+		gs.Enemies = append(gs.Enemies, enemy)
 	}
 
 	// Spawn potions (scales with level)

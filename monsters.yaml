@@ -1,0 +1,4 @@
+# Conservation Law Scaling
+# γ + H = 1.283 - 0.159·log(V)
+# Dungeon difficulty follows the same curve as fleet coordination.
+# Higher floors = more entities = lower γ+H = harder coordination = harder dungeon.
