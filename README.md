@@ -158,3 +158,15 @@ The PLATO source module connects to a PLATO room server:
 ## License
 
 MIT — original work [leereilly/gh-dungeons](https://github.com/leereilly/gh-dungeons), PLATO bridge additions by SuperInstance.
+
+## ML Gym: quilt-dungeons (the headless twin)
+
+The same dungeon, rewoven for machines: [`SuperInstance/quilt-dungeons`](https://github.com/SuperInstance/quilt-dungeons) is a headless, deterministic ML gym where an array of characters is simply a quilt with every cell getting its own character, and the code is the relational understanding of what's happening between the cells.
+
+What it is, in one breath: the glyph is the cell (`#` wall, `.` floor, `@` player, `m`/`r` monsters, `$` loot, `+` potion, `>` exit), the engine is the relational law between cells (bump = attack, aligned = shootable, adjacent = chasable), scripts are player-logic that only ever sees the patch under the lamp, and every run leaves a hash-chained receipt. Node 20+, ESM, zero dependencies — clone it into a sandbox with no network and it still runs.
+
+- **The Determinism Law:** same seed + same script ⇒ byte-identical trajectory (tested in-process and cross-process).
+- **The Contract:** `docs/CONTRACT.md` is the exact socket — implement it and your agent, script, or model plugs in forever.
+- **Baselines receipted:** greedy-loot (avg 13.97), survivor (18.74), hunter (48.13) on seeds 1–8 — and none of them has ever taken the stairs. The 200-point win bonus is unclaimed; the gym's opening exercise is holding the whole map in your head.
+
+gh-dungeons stays the human-facing game — keyboard, rooms, a pulse. quilt-dungeons is its headless twin: same glyphs, same instincts, built so a script can hold the lantern instead of you. Write your first player-logic in five minutes with the [TUTORIAL](https://github.com/SuperInstance/quilt-dungeons/blob/main/docs/TUTORIAL.md); plug a model lane in with [INTEGRATION](https://github.com/SuperInstance/quilt-dungeons/blob/main/docs/INTEGRATION.md).
